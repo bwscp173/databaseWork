@@ -1,0 +1,3 @@
+-- Loading data for Flight table
+
+Insert into Flight ...
