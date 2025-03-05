@@ -1,0 +1,30 @@
+SET search_path to summative_Work,public;
+
+DROP TABLE exam;
+
+CREATE TABLE exam(
+    -- excode CHAR(40) PRIMARY KEY,
+    extitle VARCHAR(200),
+    exlocation VARCHAR(200),
+    exdate DATE,
+    extime TIME
+);
+CREATE TABLE student (
+    sno          INTEGER,
+    sname        VARCHAR(200),
+    semail       VARCHAR(200)
+);
+
+CREATE TABLE entry (
+    eno          INTEGER,
+    excode       CHAR(4),
+    sno          INTEGER,
+    egrade       DECIMAL(5,2)
+);
+CREATE TABLE cancel (
+    eno          INTEGER,
+    excode       CHAR(4),
+    sno          INTEGER,
+    cdate        TIMESTAMP,
+    cuser        VARCHAR(200)
+);
