@@ -1,0 +1,27 @@
+1 DONE) The exam table holds details of each examination scheduled for the coming year.
+2) The student table holds details of student members of the society.
+3) The entry table holds details of the examination entries made by students for the
+coming year.
+4) The cancel table is used to record details of all entries that have been cancelled.
+5) excode is a four-character code identifying an examination, e.g. DB01 for the
+Database Exam 1.
+6 DONE) extitle is a unique descriptive title of the examination.
+7) exlocation is a place where the examination is held.
+8) exdate is a date on which the examination is held. All currently planned
+examinations are scheduled for the month of November 2025.
+9 DONE) extime is a start time of the examination. No examinations start before 09:00
+hours or after 18:00 hours.
+10) sno is a membership number given to a student member of the society.
+11) sname is a name of a student.
+12) semail is an email address of the student.
+13) eno is a reference number for an entry made for an examination by a student.
+Entries are unique reference numbers to aid anonymous marking of student's
+scripts.
+14) egrade is the grade given to a student by the examiners. When an entry is first
+made this field is empty. If the student attends the examination and is awarded a
+grade, it is recorded in this field. The range of grades is 0 to 100. If a student
+does not attend the examination then this field remains empty.
+15) cdate is a timestamp showing when the cancellation of an entry takes place.
+16) cuser is a user id of a person causing a cancellation of an entry to be recorded in
+the cancel table, for simplicity you can use system user or any string (e.g.,
+admin) for the user id.

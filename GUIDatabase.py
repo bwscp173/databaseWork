@@ -45,8 +45,11 @@ class App(CTk.CTk):
         super().__init__()
         self.__DbConnection = database_connection
         self.cursor = self.__DbConnection.cursor()
+        self.cursor.execute('SET search_path to summative,public;')
 
         self.geometry("400x400")
+        self.title("SQL summative project")
+
         self.__tableNameTitles:dict = { "exam": ["excode","extitle","exdate","extime"],
                                         "student": ["sno","sname","semail"],
                                         "entry": ["eno","excode","sno","egrade"],
@@ -69,8 +72,14 @@ class App(CTk.CTk):
         self.initiliseFrame3()
         self.initiliseFrame4()
 
+        # Specify width and height in the constructor
+        self.frames[0].bind('<Enter>', lambda _: self.title("Selecting Data"))
+        self.frames[1].bind('<Enter>', lambda _: self.title("Inserting Data"))
+        self.frames[2].bind('<Enter>', lambda _: self.title("Updating Data"))
+        self.frames[3].bind('<Enter>', lambda _: self.title("Deleting Data"))
 
     def initiliseFrame1(self):
+        """The Gui for the Selecting Tab"""
         tableName = self.__tableNameTitles.keys()
         tableTitles = self.__tableNameTitles["exam"]
         button = CTk.CTkButton(self.frames[0], text="fetch exam", command=lambda:self.displayDateFromTable("exam"))
@@ -83,17 +92,19 @@ class App(CTk.CTk):
         button.grid(column=0, row= 3,padx=20, pady=20)
 
     def initiliseFrame2(self):
+        """The Gui for the Inserting data Tab"""
         pass
+
     def initiliseFrame3(self):
         pass
+
     def initiliseFrame4(self):
         pass
-    
+
     def displayDateFromTable(self, tableName:str )-> None:
         allColumns = self.__tableNameTitles[tableName]
 
-        self.cursor.execute('SET search_path TO Demo,public;')
-        self.cursor.execute('SELECT * FROM emp')
+        self.cursor.execute(f'SELECT * FROM {tableName}')
         rows = self.cursor.fetchall()
 
         for row in rows:
@@ -106,7 +117,10 @@ try:
     app = App(conn)
     app.mainloop()
 except Exception as e:
-    print("[ERROR]" + str(e))
+    if conn:
+        conn.close()
+    raise e
+    #print("[ERROR]" + str(e))
 finally:
     if conn:
         conn.close()
