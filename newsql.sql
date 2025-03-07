@@ -11,7 +11,7 @@ CREATE TABLE exam (
    extitle VARCHAR(200) NOT NULL UNIQUE,  -- rule 6
    exlocation VARCHAR(200) NOT NULL,
    exdate DATE NOT NULL CHECK(exdate > CURRENT_DATE  -- rule 1 must be for the coming year TODO maybe add 1 year to current date so the exam has to be for next year?
-   				 AND exdate > "November 2025"),  -- rule 8 the first exam is after 2025
+   				 AND exdate > '2025-11-1'),  -- rule 8 the first exam is after 2025
    extime TIME NOT NULL CHECK('18:00' < extime  AND extime > '09:00')  -- rule 9
 );
 
@@ -19,7 +19,7 @@ CREATE TABLE exam (
 CREATE TABLE student(
 	sno integer NOT NULL PRIMARY KEY,
 	sname VARCHAR(200) NOT NULL,
-	semail VARCHAR(200) NOT NULL CHECK (semail) -- TODO write a function to validate emails
+	semail VARCHAR(200) NOT NULL --CHECK (semail) -- TODO write a function to validate emails
 );
 
 CREATE TABLE entry(

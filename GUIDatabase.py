@@ -13,23 +13,26 @@ History                  :  4/3/2025 v1.0 - added code given in the lecture
                                             added basic GUI (tabs(frames),buttons)
 
 ===================================================================================================="""
-
 # these require pip
 # to install these run the command "pip install -r /path/to/requirements.txt"
 import psycopg2
 import customtkinter as CTk
+import tkinter as Tk  # only needed for labelFrames
 import json
 
 with open("../secret.json", "r") as f:
     secretData = json.load(f) 
 
-conn = psycopg2.connect(user = secretData["user"],
-                        password = secretData["password"],
-                        host = secretData["host"],
-                        port = secretData["port"],
-                        database = secretData["database"]
-                        )
-
+try:
+    conn = psycopg2.connect(user = secretData["user"],
+                            password = secretData["password"],
+                            host = secretData["host"],
+                            port = secretData["port"],
+                            database = secretData["database"]
+                            )
+except psycopg2.OperationalError as e:
+    print("connection error, turn on the 'BIG-IP edge client' vpn ")
+    exit(-1)
 # given example of the psycopg2 api:
 # cur = conn.cursor()
 # cur.execute('SET search_path TO Demo,public;')
@@ -47,8 +50,9 @@ class App(CTk.CTk):
         self.cursor = self.__DbConnection.cursor()
         self.cursor.execute('SET search_path to summative,public;')
 
-        self.geometry("400x400")
-        self.title("SQL summative project")
+        self.geometry("550x450")
+        self.__title = "SQL summative project"
+        self.title(self.__title)
 
         self.__tableNameTitles:dict = { "exam": ["excode","extitle","exdate","extime"],
                                         "student": ["sno","sname","semail"],
@@ -73,54 +77,229 @@ class App(CTk.CTk):
         self.initiliseFrame4()
 
         # Specify width and height in the constructor
-        self.frames[0].bind('<Enter>', lambda _: self.title("Selecting Data"))
-        self.frames[1].bind('<Enter>', lambda _: self.title("Inserting Data"))
-        self.frames[2].bind('<Enter>', lambda _: self.title("Updating Data"))
-        self.frames[3].bind('<Enter>', lambda _: self.title("Deleting Data"))
+        self.frames[0].bind('<Enter>', lambda _: self.title(self.__title+" - Selecting Data"))
+        self.frames[1].bind('<Enter>', lambda _: self.title(self.__title+" - Inserting Data"))
+        self.frames[2].bind('<Enter>', lambda _: self.title(self.__title+" - Updating Data"))
+        self.frames[3].bind('<Enter>', lambda _: self.title(self.__title+" - Deleting Data"))
+
+        self.frame1totalbuttons = 0
 
     def initiliseFrame1(self):
         """The Gui for the Selecting Tab"""
         tableName = self.__tableNameTitles.keys()
         tableTitles = self.__tableNameTitles["exam"]
-        button = CTk.CTkButton(self.frames[0], text="fetch exam", command=lambda:self.displayDateFromTable("exam"))
-        button.grid(column=0, row= 0,padx=20, pady=20)
-        button = CTk.CTkButton(self.frames[0], text="fetch student", command=lambda:self.displayDateFromTable("student"))
-        button.grid(column=0, row= 1,padx=20, pady=20)
-        button = CTk.CTkButton(self.frames[0], text="fetch entry", command=lambda:self.displayDateFromTable("entry"))
-        button.grid(column=0, row= 2,padx=20, pady=20)
-        button = CTk.CTkButton(self.frames[0], text="fetch cancel", command=lambda:self.displayDateFromTable("cancel"))
-        button.grid(column=0, row= 3,padx=20, pady=20)
+        # button = CTk.CTkButton(self.frames[0], text="fetch exam", command=lambda:self.displayDataFromTable("exam"))
+        # button.grid(column=2, row= 0,padx=20, pady=20)
+        # button = CTk.CTkButton(self.frames[0], text="fetch student", command=lambda:self.displayDataFromTable("student"))
+        # button.grid(column=2, row= 1,padx=20, pady=20)
+        # button = CTk.CTkButton(self.frames[0], text="fetch entry", command=lambda:self.displayDataFromTable("entry"))
+        # button.grid(column=2, row= 2,padx=20, pady=20)
+        # button = CTk.CTkButton(self.frames[0], text="fetch cancel", command=lambda:self.displayDataFromTable("cancel"))
+        # button.grid(column=2, row= 3,padx=20, pady=20)
+
+        label = CTk.CTkLabel(self.frames[0], text="Chose from a table")
+        label.grid(column=0, row=0)
+
+        dropDownOptionValue = CTk.StringVar()
+        totalQueryVar = CTk.StringVar()
+
+
+        dropDownOptions = list(self.__tableNameTitles.keys())
+        dropDownTableOptions = CTk.CTkOptionMenu(self.frames[0], variable=dropDownOptionValue, values=dropDownOptions)
+        dropDownTableOptions.set(dropDownOptions[0])
+        dropDownTableOptions.grid(column=1, row=0, padx=20, pady=20)
+
+        Checkbutton1 = CTk.IntVar()
+        Checkbutton2 = CTk.IntVar()
+        Checkbutton3 = CTk.IntVar()
+        Checkbutton4 = CTk.IntVar()
+
+        checkButtonText1 = CTk.StringVar()
+        checkButtonText2 = CTk.StringVar()
+        checkButtonText3 = CTk.StringVar()
+        checkButtonText4 = CTk.StringVar()
+
+        labelFrame = Tk.LabelFrame(self.frames[0], text="Columns", bg="gray")
+
+        Button1 = CTk.CTkCheckBox(labelFrame, textvariable=checkButtonText1,
+                              variable=Checkbutton1,
+                              onvalue=True,
+                              offvalue=False)
+
+        Button2 = CTk.CTkCheckBox(labelFrame, textvariable=checkButtonText2,
+                              variable=Checkbutton2,
+                              onvalue=True,
+                              offvalue=False)
+
+        Button3 = CTk.CTkCheckBox(labelFrame, textvariable=checkButtonText3,
+                              variable=Checkbutton3,
+                              onvalue=True,
+                              offvalue=False)
+
+        Button4 = CTk.CTkCheckBox(labelFrame, textvariable=checkButtonText4,
+                              variable=Checkbutton4,
+                              onvalue=True,
+                              offvalue=False)
+        allButtons = [Button1,Button2,Button3,Button4]
+        allButtonsText = [checkButtonText1,checkButtonText2,checkButtonText3,checkButtonText4]
+
+        # for i in range(len(allButtons)):
+        #     allButtons[i].grid(column=2,row=i,padx=5,pady=5)
+
+        labelFrame.grid(column=1,row=2 , columnspan=3, padx=0, pady=0)
+
+        label = CTk.CTkLabel(self.frames[0], text="type in the WHERE clause")
+        label.grid(column=0, row=5, padx=20, pady=20)
+
+        entryTextVar = CTk.StringVar()
+        textEntry = CTk.CTkEntry(self.frames[0], textvariable=entryTextVar)
+        textEntry.grid(column=1, row=5, padx=20, pady=20)
+
+        updateButton = CTk.CTkButton(self.frames[0], text="Update 'total query'", command=
+        lambda: (self.updateTotalQueryFrame1(totalQueryVar, dropDownOptionValue ,entryTextVar, allButtons, allButtonsText)))
+            #requirements.set("Requirements\n" + (", ".join(self.__tableNameTitles[dropDownOptionValue.get()])))))
+        updateButton.grid(column=0, row=6, padx=20, pady=20)
+
+        label = CTk.CTkLabel(self.frames[0], textvariable=totalQueryVar)
+        label.grid(column=1, row=6, padx=20, pady=20)
+
+        self.updateTotalQueryFrame1(totalQueryVar, dropDownOptionValue, entryTextVar, allButtons, allButtonsText)
+
+    def updateTotalQueryFrame1(self, totalQueryVar, dropDownOptionValue ,WHERETextVar, allButtons, allButtonsText):
+        try:
+            self.__tableNameTitles[dropDownOptionValue.get()]
+        except KeyError:  # when the user hasnt selected a table
+            return
+
+        tableName = dropDownOptionValue.get()
+        self.frame1totalbuttons = len(self.__tableNameTitles[tableName])
+
+        # # deleting all the checkboxes
+        # i=0
+        # while True:
+        #     try:
+        #         allButtons[i].destroy()
+        #         i += 1
+        #     except IndexError:
+        #         break
+        for i in range(len(allButtons)):
+            allButtonsText[i].set("_________")
+            allButtons[i].lower()
+            allButtons[i].configure(state=CTk.DISABLED)
+
+        totalQueryColumns = []
+
+        for i in range(self.frame1totalbuttons):
+            allButtons[i].forget()  # I have forgotten what this even does ong
+            allButtons[i].configure(state=CTk.NORMAL)
+            print(i,self.__tableNameTitles[tableName][i])
+
+            allButtons[i].grid(column=2,row=i,padx=5,pady=5)
+            allButtonsText[i].set(self.__tableNameTitles[tableName][i])
+            if allButtons[i].get() == True:
+                totalQueryColumns.append(allButtonsText[i].get())
+
+        if len(totalQueryColumns) == self.frame1totalbuttons:
+            totalQueryColumns = ["*"]
+
+        if WHERETextVar.get() == "":
+            totalQueryVar.set(f"total query:\nSELECT {(", ".join(totalQueryColumns))}\n FROM {tableName};")
+
+        else:
+            totalQueryVar.set(f"total query:\nSELECT {(", ".join(totalQueryColumns))}\n FROM {tableName} WHERE \n{WHERETextVar.get()};")
+
 
     def initiliseFrame2(self):
         """The Gui for the Inserting data Tab"""
+
+        totalQueryVar = CTk.StringVar()
+        totalQueryVar.set("total query: ")
+
+        label = CTk.CTkLabel(self.frames[1], text="Chose from a table")
+        label.grid(column=0,row=0)
+
+        requirements = CTk.StringVar()
+        requirements.set("Requirements")
+
+        dropDownOptionValue = CTk.StringVar()
+
+        dropDownOptions = list(self.__tableNameTitles.keys())
+        dropDownTableOptions = CTk.CTkOptionMenu(self.frames[1],variable=dropDownOptionValue,values=dropDownOptions)
+        dropDownTableOptions.grid(column=1,row=0, padx=20, pady=20)
+
+        label = CTk.CTkLabel(self.frames[1], text="type in the parameters\nin a CSV format")
+        label.grid(column=0, row=1, padx=20, pady=20)
+
+        entryTextVar = CTk.StringVar()
+        textEntry = CTk.CTkEntry(self.frames[1],textvariable=entryTextVar)
+        textEntry.grid(column=1,row=1, padx=20, pady=20)
+
+        updateButton = CTk.CTkButton(self.frames[1],text="Update 'total query'",command=
+                lambda:(
+                    totalQueryVar.set("total query:\nINSERT INTO " + dropDownOptionValue.get() + "(" + (", ".join(self.__tableNameTitles[dropDownOptionValue.get()])) + ")" + "VALUES\n("+entryTextVar.get()+")"),
+                    requirements.set("Requirements\n" + (", ".join(self.__tableNameTitles[dropDownOptionValue.get()])))))
+        updateButton.grid(column=0,row=2, padx=20, pady=20)
+
+        label = CTk.CTkLabel(self.frames[1], textvariable=totalQueryVar)
+        label.grid(column=1,row=2, padx=20, pady=20)
+
+        label = CTk.CTkLabel(self.frames[1], textvariable=requirements)
+        label.grid(column=2, row=1, padx=20, pady=20)
+
+        insertButton = CTk.CTkButton(self.frames[1], text="insert into database",
+                                     command=lambda: self.__insertIntoDb(dropDownOptionValue,entryTextVar))
+        insertButton.grid(column=0, row=3, padx=20, pady=20)
+
+    def __insertIntoDb(self, dropDownOptionValue:CTk.StringVar, entryTextVar:CTk.StringVar):
+        print("INSERT INTO " + dropDownOptionValue.get() + "(" + (", ".join(
+        self.__tableNameTitles[dropDownOptionValue.get()])) + ")" + "VALUES\n(" + entryTextVar.get() + ")"),
+        self.cursor.execute(f"INSERT INTO {dropDownOptionValue.get()} VALUES\n({entryTextVar.get()})"),
+        self.__DbConnection.commit()
+
+    def __updateDb(self):
         pass
 
     def initiliseFrame3(self):
-        pass
+        entryTextVar = CTk.StringVar()
+        requirements = CTk.StringVar()
+        totalQueryVar = CTk.StringVar()
+        totalQueryVar.set("total query: ")
+
+        label = CTk.CTkLabel(self.frames[2], text="Chose from a table")
+        label.grid(column=0, row=0, padx=20, pady=20)
+
+        dropDownOptionValue = CTk.StringVar()
+
+        dropDownOptions = list(self.__tableNameTitles.keys())
+        dropDownTableOptions = CTk.CTkOptionMenu(self.frames[2], variable=dropDownOptionValue, values=dropDownOptions)
+        dropDownTableOptions.grid(column=1, row=0, padx=20, pady=20)
+
+        updateButton = CTk.CTkButton(self.frames[2], text="Update 'total query'", command=
+        lambda: (
+            totalQueryVar.set(f"total query:\nUPDATE {dropDownTableOptions.get()} SET{(", ".join(
+                self.__tableNameTitles[dropDownOptionValue.get()]))} VALUES\n(" + entryTextVar.get() + ")"),
+            requirements.set("Requirements\n" + (", ".join(self.__tableNameTitles[dropDownOptionValue.get()])))))
+        updateButton.grid(column=0, row=2, padx=20, pady=20)
+
+        label = CTk.CTkLabel(self.frames[2], textvariable=totalQueryVar)
+        label.grid(column=1, row=2, padx=20, pady=20)
 
     def initiliseFrame4(self):
         pass
 
-    def displayDateFromTable(self, tableName:str )-> None:
+    def displayDataFromTable(self, tableName:str )-> None:
         allColumns = self.__tableNameTitles[tableName]
 
         self.cursor.execute(f'SELECT * FROM {tableName}')
         rows = self.cursor.fetchall()
 
-        for row in rows:
-            print(row[0], row[1], row[3])
-
-    def button_callback(self):
-        print("button clicked")
+        print(rows)
 
 try:
     app = App(conn)
     app.mainloop()
 except Exception as e:
-    if conn:
-        conn.close()
-    raise e
-    #print("[ERROR]" + str(e))
+    print("[ERROR]" + str(e))
 finally:
     if conn:
         conn.close()
