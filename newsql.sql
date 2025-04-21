@@ -37,6 +37,7 @@ CREATE TABLE cancel (
 	cuser VARCHAR(200) NOT NULL
 );
 
+--INSERT INTO entry (eno,excode,sno,egrade) VALUES (int,char,int,decimal)
 -- just placeholder stuff right now
 -- CREATE OR REPLACE FUNCTION log_cancelled()
 -- RETURNS TRIGGER AS $$
