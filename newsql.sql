@@ -233,7 +233,9 @@ $$ LANGUAGE PLPGSQL;
 --SELECT student.sname, exam.exlocation, exam.excode, exam.extitle, exam.exdate, exam.extime FROM student,entry,exam WHERE student.sno = 1 and entry.excode = exam.excode;
 -- SELECT * FROM exam WHERE excode = (SELECT entry.excode FROM student,entry where student.sno = entry.sno);
 --SELECT * FROM entry;
-SELECT student.sname, exam.exlocation, exam.excode, exam.extitle, exam.exdate, exam.extime FROM student,entry,exam WHERE student.sno = 1 AND student.sno = entry.sno AND entry.excode = exam.excode; 
+
+
+-- SELECT student.sname, exam.exlocation, exam.excode, exam.extitle, exam.exdate, exam.extime FROM student,entry,exam WHERE student.sno = 1 AND student.sno = entry.sno AND entry.excode = exam.excode; 
 
 
 -- FOR TASK H
@@ -307,3 +309,5 @@ SELECT student.sname, exam.exlocation, exam.excode, exam.extitle, exam.exdate, e
 -- SELECT * FROM show_table_entry_with_excode('db02');
 -- SELECT * FROM show_table_entry_with_excode('ma01');
 -- SELECT * FROM show_table_entry_with_excode('ma02');
+
+SELECT * FROM student;

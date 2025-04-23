@@ -22,7 +22,7 @@ import tkinter as Tk  # only needed for labelFrames
 import json
 
 
-attempt_connection = False
+attempt_connection = True
 if attempt_connection:
     with open("../secret.json", "r") as f:
         secretData = json.load(f)
@@ -34,13 +34,14 @@ if attempt_connection:
                                 port=secretData["port"],
                                 database=secretData["database"]
                                 )
+        #  the summative db is selected in the __init__
         print(f"successfully connected to the db named '{secretData["database"]}'!")
         secretData = {}
 
     except psycopg2.OperationalError as e:
         print("connection error, turn on the 'BIG-IP edge client' vpn.")
         print("running GUI but commands won't execute.")
-conn = None
+#conn = None
 
 
 class App:
@@ -53,7 +54,7 @@ class App:
             self.__cursor = self.__DbConnection.cursor()
             self.__cursor.execute('SET search_path to summative,public;')
 
-        self.CTK.geometry("275")
+        #self.CTK.geometry("")  # if i dont set the geometry then it auto fits better then i can
         self.__title = "SQL summative project"
 
         self.CTK.title(self.__title)
@@ -76,10 +77,11 @@ class App:
         if self.__DbConnection is not None:
 
             self.__cursor.execute(query)
+            print("fetching results:")
             self.display_results()
 
     def display_results(self):
-        print(self.__cursor.fetchall())
+        print("results: ", self.__cursor.fetchall())
 
     def custom_func(self):
         print("custom function!")
@@ -128,7 +130,7 @@ class App:
         )
         updateButton.grid(column=0, row=3, columnspan=2, padx=20, pady=20)
 
-
+        totalTextVar.set(f"INSERT INTO student(sname,semail) VALUES ('{nametextEntry.get()}','{emailtextEntry.get()}');"),
         task_A_tab.mainloop()
 
     def task_B(self):
@@ -294,12 +296,6 @@ in a year. The student cannot take more than one examination on the same day.
         task_E_tab = CTk.CTk()
         task_E_tab.title(self.__title + ": Task E - add examination")
 
-        label = CTk.CTkLabel(task_E_tab, text="what is the exam's eno:")
-        label.grid(column=0, row=0, padx=20, pady=20)
-
-        enoentryTextVar = CTk.StringVar(task_E_tab)
-        enotextEntry = CTk.CTkEntry(task_E_tab,width=120,height=40, textvariable=enoentryTextVar)
-        enotextEntry.grid(column=1, row=0, padx=20, pady=20)
 
         # -0-
         # X X
@@ -327,37 +323,77 @@ in a year. The student cannot take more than one examination on the same day.
         snotextEntry = CTk.CTkEntry(task_E_tab,width=120,height=40, textvariable=snoTextVar)
         snotextEntry.grid(column=1, row=2, padx=20, pady=20)
 
-        # -0-
-        # 0 0
-        # 0 0
-        # X X
-        # 0 0
-        # 0 0
-        label = CTk.CTkLabel(task_E_tab, text="what is the student's egrade:")
-        label.grid(column=0, row=3, padx=20, pady=20)
+        updateButton = CTk.CTkButton(task_E_tab, text="Update 'total query'", command=
+            lambda: (
+                totalTextVar.set(f"INSERT INTO entry (excode,sno) VALUES ('{excodetextEntry.get()}','{snotextEntry.get()}');")
+            )
+        )
+        updateButton.grid(column=0, row=4, padx=20, pady=20)
 
-        egradeEntryTextVar = CTk.StringVar(task_E_tab)
-        egradeTextEntry = CTk.CTkEntry(task_E_tab,width=120,height=40, textvariable=egradeEntryTextVar)
-        egradeTextEntry.grid(column=1, row=3, padx=20, pady=20)
+        totalTextVar = CTk.StringVar(task_E_tab)
+        totallabelB = CTk.CTkLabel(task_E_tab, textvariable=totalTextVar)
+        totallabelB.grid(column=1, row=4, padx=20, pady=20)
 
         submitButton = CTk.CTkButton(task_E_tab, text="submit command", command=
             lambda: (
-                #INSERT INTO entry (eno,excode,sno,egrade) VALUES (int,char,int,decimal)
-                values := enotextEntry.get() +", "+ excodetextEntry.get() +", "+ snotextEntry.get() +", "+ egradeTextEntry.get(),
-                toSub := f"INSERT INTO entry (eno,excode,sno,egrade) VALUES ({values});",
-                print("submitting: " + toSub)
+
+                self.__run_sql_command(totalTextVar.get())
             )
         )
-        submitButton.grid(column=0, row=4, columnspan=2, padx=20, pady=20)
+        submitButton.grid(column=0, row=5, columnspan=2, padx=20, pady=20)
 
-
+        totalTextVar.set(f"INSERT INTO entry (excode,sno) VALUES ('{excodetextEntry.get()}','{snotextEntry.get()}');")
         task_E_tab.mainloop()
 
     def task_F(self):
         """F. Update an entry. This records the grade awarded by the examiners to an entry
 made by a student for an examination. The entry is specified by entry reference
 number."""
-        print("task_F")
+        task_F_tab = CTk.CTk()
+        task_F_tab.title(self.__title + ": Task B - adding exam")
+
+        label = CTk.CTkLabel(task_F_tab, text="what is the students sno:")
+        label.grid(column=0, row=0, padx=20, pady=20)
+
+        snoEntryTextVar = CTk.StringVar(task_F_tab)
+        snoTextEntry = CTk.CTkEntry(task_F_tab,width=120, height=40, textvariable=snoEntryTextVar)
+        snoTextEntry.grid(column=1, row=0, padx=20, pady=20)
+
+        label = CTk.CTkLabel(task_F_tab, text="what is the exams excode:")
+        label.grid(column=0, row=1, padx=20, pady=20)
+
+        excodeEntryTextVar = CTk.StringVar(task_F_tab)
+        excodeTextEntry = CTk.CTkEntry(task_F_tab,width=120, height=40, textvariable=excodeEntryTextVar)
+        excodeTextEntry.grid(column=1, row=1, padx=20, pady=20)
+
+        label = CTk.CTkLabel(task_F_tab, text="what is the students egrade:")
+        label.grid(column=0, row=2, padx=20, pady=20)
+
+        egradeEntryTextVar = CTk.StringVar(task_F_tab)
+        egradeTextEntry = CTk.CTkEntry(task_F_tab,width=120, height=40, textvariable=egradeEntryTextVar)
+        egradeTextEntry.grid(column=1, row=2, padx=20, pady=20)
+
+        updateButton = CTk.CTkButton(task_F_tab, text="Update 'total query'", command=
+            lambda: (
+                totalTextVar.set(f"SELECT give_egrade({snoTextEntry.get()},'{excodeTextEntry.get()}',{egradeTextEntry.get()});")
+            )
+        )
+        updateButton.grid(column=0, row=3, padx=20, pady=20)
+
+        totalTextVar = CTk.StringVar(task_F_tab)
+        totallabelB = CTk.CTkLabel(task_F_tab, textvariable=totalTextVar)
+        totallabelB.grid(column=1, row=3, padx=20, pady=20)
+
+        submitButton = CTk.CTkButton(task_F_tab, text="submit command", command=
+            lambda: (
+                self.__run_sql_command(totalTextVar.get())
+            )
+        )
+        submitButton.grid(column=0, row=4, columnspan=2, padx=20, pady=20)
+
+        # making this be displayed with this text sowhen it appears its not a shock to the user
+        totalTextVar.set(f"SELECT give_egrade(,'',);")
+        task_F_tab.mainloop()
 
     #    0 0 0
     #    0 0 0
@@ -369,7 +405,10 @@ number."""
         print("task_H")
 
     def task_I(self):
+        self.__run_sql_command("SELECT * FROM student;")
         print("task_I")
+
+
     def init_buttons(self):
 
         #    A B C
