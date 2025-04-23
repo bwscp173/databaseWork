@@ -18,30 +18,28 @@ History                  :  4/3/2025 v1.0 - added code given in the lecture
 ===================================================================================================="""
 import psycopg2
 import customtkinter as CTk
-import tkinter as Tk  # only needed for labelFrames
 import json
 
 
-attempt_connection = True
-if attempt_connection:
-    with open("../secret.json", "r") as f:
-        secretData = json.load(f)
 
-    try:
-        conn = psycopg2.connect(user=secretData["user"],
-                                password=secretData["password"],
-                                host=secretData["host"],
-                                port=secretData["port"],
-                                database=secretData["database"]
-                                )
-        #  the summative db is selected in the __init__
-        print(f"successfully connected to the db named '{secretData["database"]}'!")
-        secretData = {}
+with open("../secret.json", "r") as f:
+    secretData = json.load(f)
 
-    except psycopg2.OperationalError as e:
-        print("connection error, turn on the 'BIG-IP edge client' vpn.")
-        print("running GUI but commands won't execute.")
-#conn = None
+try:
+    conn = psycopg2.connect(user=secretData["user"],
+                            password=secretData["password"],
+                            host=secretData["host"],
+                            port=secretData["port"],
+                            database=secretData["database"]
+                            )
+    #  the summative db is selected in the __init__
+    print(f"successfully connected to the db named '{secretData["database"]}'!")
+    secretData = {}
+
+except psycopg2.OperationalError as e:
+    print("connection error, turn on the 'BIG-IP edge client' vpn.")
+    print("running GUI but commands won't execute.")
+
 
 
 class App:
@@ -77,11 +75,35 @@ class App:
         if self.__DbConnection is not None:
 
             self.__cursor.execute(query)
+            self.__DbConnection.commit()
+            
             print("fetching results:")
-            self.display_results()
+            try:
+                self.display_results()
+            except psycopg2.ProgrammingError:
+                print("no results to fetch from that command")
 
     def display_results(self):
-        print("results: ", self.__cursor.fetchall())
+        #print("results: ", self.__cursor.fetchall())
+
+
+        results_tab = CTk.CTk()
+        results_tab.title(self.__title + ": Veiwing results")
+
+        label = CTk.CTkLabel(results_tab, text=f"the most recent command:  {self.mostRecentQuery}")
+        label.grid(column=0, row=0, padx=20, pady=20)
+
+        text = CTk.CTkTextbox(results_tab, width=500, height=500)
+        text.grid(column=0, row=1, padx=20, pady=20)
+
+
+        raw:list[tuple] = self.__cursor.fetchall()
+        print(raw)
+        for i in range(len(raw)):
+            formated = str(raw[i]) + '\n'
+
+            text.insert(index=CTk.END, text=formated)
+        results_tab.mainloop()
 
     def custom_func(self):
         print("custom function!")
@@ -254,7 +276,7 @@ in the student table."""
         """D. Delete an examination. Examinations that have no entries may be deleted from
 the database. The examination must not have any current (not cancelled) entries."""
         task_D_tab = CTk.CTk()
-        task_D_tab.title(self.__title + ": Task B - adding exam")
+        task_D_tab.title(self.__title + ": Task D - delete examination")
 
         label = CTk.CTkLabel(task_D_tab, text="what is the exams excode:")
         label.grid(column=0, row=0, padx=20, pady=20)
@@ -350,7 +372,7 @@ in a year. The student cannot take more than one examination on the same day.
 made by a student for an examination. The entry is specified by entry reference
 number."""
         task_F_tab = CTk.CTk()
-        task_F_tab.title(self.__title + ": Task B - adding exam")
+        task_F_tab.title(self.__title + ": Task F - give egrade")
 
         label = CTk.CTkLabel(task_F_tab, text="what is the students sno:")
         label.grid(column=0, row=0, padx=20, pady=20)
@@ -399,71 +421,132 @@ number."""
     #    0 0 0
     #    G H I
     def task_G(self):
-        print("task_G")
+        """G. Produce a table showing the examination timetable for a given student. The
+student is specified by his/her student membership number. The timetable should
+contain the student's name and location, code, title, day and time of each
+examination for which the student has entered. """
+        task_G_tab = CTk.CTk()
+        task_G_tab.title(self.__title + ": Task G - get students timetable")
+
+        label = CTk.CTkLabel(task_G_tab, text="what is the students sno:")
+        label.grid(column=0, row=0, padx=20, pady=20)
+
+        snoEntryTextVar = CTk.StringVar(task_G_tab)
+        snoTextEntry = CTk.CTkEntry(task_G_tab,width=120,height=40, textvariable=snoEntryTextVar)
+        snoTextEntry.grid(column=1, row=0, padx=20, pady=20)
+
+        updateButton = CTk.CTkButton(task_G_tab, text="Update 'total query'", command=
+            lambda: (
+                totalTextVar.set(f"SELECT * FROM examination_timetable({snoTextEntry.get()});")
+            )
+        )
+        updateButton.grid(column=0, row=1, padx=20, pady=20)
+
+        totalTextVar = CTk.StringVar(task_G_tab)
+        totallabelB = CTk.CTkLabel(task_G_tab, textvariable=totalTextVar)
+        totallabelB.grid(column=1, row=1, padx=20, pady=20)
+
+        submitButton = CTk.CTkButton(task_G_tab, text="submit command", command=
+            lambda: (
+                self.__run_sql_command(totalTextVar.get())
+            )
+        )
+        submitButton.grid(column=0, row=2, columnspan=2, padx=20, pady=20)
+
+        # making this be displayed with this text sowhen it appears its not a shock to the user
+        totalTextVar.set("SELECT * FROM examination_timetable();")
+        task_G_tab.mainloop()
 
     def task_H(self):
-        print("task_H")
+        """H. Produce a table showing the result obtained by each student for each
+examination. The table should be sorted by examination code and then by student
+name. If the student is awarded a grade of 70% or more then the result is to be
+shown as 'Distinction', a grade of at least 50% but less than 70% is to be shown as
+'Pass' and grades below 50% are to be shown as 'Fail'. If the student has not taken
+the examination then the result is shown as 'Not taken'. The table should display the
+exam code, exam title, student name and exam result (e.g., 'Distinction', ‘Pass’,
+‘Fail’, ‘Not taken’).
+
+        i dont think any additional GUI is needed for this function as its for all students"""
+        self.__run_sql_command("SELECT * FROM show_table_entry();")
 
     def task_I(self):
-        self.__run_sql_command("SELECT * FROM student;")
-        print("task_I")
+        """I. As H above but for a given examination. The examination is specified by
+examination code."""
+        task_I_tab = CTk.CTk()
+        task_I_tab.title(self.__title + ": Task I - get classes grades")
+
+        label = CTk.CTkLabel(task_I_tab, text="what is the students sno:")
+        label.grid(column=0, row=0, padx=20, pady=20)
+
+        snoEntryTextVar = CTk.StringVar(task_I_tab)
+        snoTextEntry = CTk.CTkEntry(task_I_tab,width=120,height=40, textvariable=snoEntryTextVar)
+        snoTextEntry.grid(column=1, row=0, padx=20, pady=20)
+
+        updateButton = CTk.CTkButton(task_I_tab, text="Update 'total query'", command=
+            lambda: (
+                totalTextVar.set(f"SELECT * FROM show_table_entry_with_excode('{snoTextEntry.get()}');")
+            )
+        )
+        updateButton.grid(column=0, row=1, padx=20, pady=20)
+
+        totalTextVar = CTk.StringVar(task_I_tab)
+        totallabelB = CTk.CTkLabel(task_I_tab, textvariable=totalTextVar)
+        totallabelB.grid(column=1, row=1, padx=20, pady=20)
+
+        submitButton = CTk.CTkButton(task_I_tab, text="submit command", command=
+            lambda: (
+                self.__run_sql_command(totalTextVar.get())
+            )
+        )
+        submitButton.grid(column=0, row=2, columnspan=2, padx=20, pady=20)
+
+        # making this be displayed with this text sowhen it appears its not a shock to the user
+        totalTextVar.set("SELECT * FROM show_table_entry_with_excode('');")
+        task_I_tab.mainloop()
+
 
 
     def init_buttons(self):
+        """just creating the 3x3 grid of buttons to call each of the assesments tasks"""
 
         #    A B C
         #    0 0 0
         #    0 0 0
-        button = CTk.CTkButton(self.CTK, text="my buttonA", height=50, command=self.task_A)
+        button = CTk.CTkButton(self.CTK, text="(A)\nnew student", height=50, command=self.task_A)
         button.grid(column=0 , row=0, padx=20, pady=20)
 
-        button = CTk.CTkButton(self.CTK, text="my buttonB", height=50, command=self.task_B)
+        button = CTk.CTkButton(self.CTK, text="(B)\nnew examination", height=50, command=self.task_B)
         button.grid(column=1 , row=0, padx=20, pady=20)
 
-        button = CTk.CTkButton(self.CTK, text="my buttonC", height=50, command=self.task_C)
+        button = CTk.CTkButton(self.CTK, text="(C)\nwithdraw student", height=50, command=self.task_C)
         button.grid(column=2 , row=0, padx=20, pady=20)
 
         #    0 0 0
         #    D E F
         #    0 0 0
-        button = CTk.CTkButton(self.CTK, text="my buttonD", height=50,command=self.task_D)
+        button = CTk.CTkButton(self.CTK, text="(D)\ndelete examination", height=50,command=self.task_D)
         button.grid(column=0 , row=1 ,padx=20, pady=20)
 
-        button = CTk.CTkButton(self.CTK, text="my buttonE", height=50,command=self.task_E)
+        button = CTk.CTkButton(self.CTK, text="(E)\nadd exam entry", height=50,command=self.task_E)
         button.grid(column=1 , row=1 ,padx=20, pady=20)
 
-        button = CTk.CTkButton(self.CTK, text="my buttonF", height=50,command=self.task_F)
+        button = CTk.CTkButton(self.CTK, text="(F)\ngive grade", height=50,command=self.task_F)
         button.grid(column=2 , row=1 ,padx=20, pady=20)
 
         #    0 0 0
         #    0 0 0
         #    G H I
-        button = CTk.CTkButton(self.CTK, text="my button", height=50, command=self.task_G)
+        button = CTk.CTkButton(self.CTK, text="(G)\nstudent timetable", height=50, command=self.task_G)
         button.grid(column=0 , row=2 ,padx=20, pady=20)
 
-        button = CTk.CTkButton(self.CTK, text="my button", height=50, command=self.task_H)
+        button = CTk.CTkButton(self.CTK, text="(H)\nall grades", height=50, command=self.task_H)
         button.grid(column=1 , row=2 ,padx=20, pady=20)
 
-        button = CTk.CTkButton(self.CTK, text="my button", height=50, command=self.task_I)
+        button = CTk.CTkButton(self.CTK, text="(I)\nclasses grades", height=50, command=self.task_I)
         button.grid(column=2 , row=2 ,padx=20, pady=20)
 
 
-    def displayDataFromTable(self, tableName: str) -> None:
-        allColumns = self.__tableNameTitles[tableName]
-        if self.__DbConnection is not None:
-            self.cursor.execute(f'SELECT * FROM {tableName}')
-            rows = self.cursor.fetchall()
-
-            print(rows)
-
-
-app = App(conn)
-#
-# try:
-#     app = App(conn)
-#     app.mainloop()
-# except Exception as e:
-#     print("[ERROR]" + str(e))
-# finally:
-#     if conn:
-#         conn.close()
+if __name__ == "__main__":
+    app = App(conn)
+    print("thank you for using my software")

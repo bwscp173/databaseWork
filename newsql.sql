@@ -203,23 +203,18 @@ $$ LANGUAGE PLPGSQL;
 
 
 -- -- FOR TASK G
--- CREATE OR REPLACE FUNCTION examination_timetable(given_sno INTEGER)
--- RETURNS TABLE (
--- 				student_name VARCHAR(200),
--- 				exam_location VARCHAR(200), 
--- 				exam_code CHAR(4),
--- 				exam_title VARCHAR(200),
--- 				exam_day DATE,
--- 				exam_time TIME) AS $$
--- BEGIN
-
--- 	RETURN QUERY SELECT distinct on (exam.excode) student.sname, exam.exlocation, exam.excode, exam.extitle, exam.exdate, exam.extime FROM student,entry,exam WHERE student.sno = given_sno and entry.excode = exam.excode;
-
-
--- --SELECT student.sname, exam. FROM student,exam WHERE student.sno = 5;
-
--- END;
--- $$ LANGUAGE PLPGSQL;
+CREATE OR REPLACE FUNCTION examination_timetable(given_sno INTEGER)
+RETURNS TABLE (
+				student_name VARCHAR(200),
+				exam_location VARCHAR(200), 
+				exam_code CHAR(4),
+				exam_title VARCHAR(200),
+				exam_day DATE,
+				exam_time TIME) AS $$
+BEGIN
+	RETURN QUERY SELECT distinct on (exam.excode) student.sname, exam.exlocation, exam.excode, exam.extitle, exam.exdate, exam.extime FROM student,entry,exam WHERE student.sno = given_sno and entry.excode = exam.excode;
+END;
+$$ LANGUAGE PLPGSQL;
 
 
 -- SELECT student.sname, exam.exlocation, exam.excode, exam.extitle, exam.exdate, exam.extime
@@ -239,42 +234,42 @@ $$ LANGUAGE PLPGSQL;
 
 
 -- FOR TASK H
--- CREATE OR REPLACE FUNCTION show_table_entry()
--- RETURNS TABLE (
--- 				examination_code CHAR(4),
--- 				student_name VARCHAR(200), 
--- 				egrade_value DECIMAL(5,2),
--- 				egrade_text TEXT) AS $$
--- BEGIN
--- 	RETURN QUERY SELECT entry.excode, student.sname,entry.egrade,
--- 	CASE
--- 		WHEN entry.egrade >= 70 THEN 'Distinction'
--- 		WHEN entry.egrade < 70 and entry.egrade >= 50 THEN 'Pass' 
--- 		WHEN entry.egrade < 50 THEN 'Fail'
--- 		else 'Not taken'
--- 	END AS egrade
--- 	from entry,student WHERE student.sno = entry.sno ORDER BY examination_code,student_name;
--- END;
--- $$ LANGUAGE PLPGSQL;
+CREATE OR REPLACE FUNCTION show_table_entry()
+RETURNS TABLE (
+				examination_code CHAR(4),
+				student_name VARCHAR(200), 
+				egrade_value DECIMAL(5,2),
+				egrade_text TEXT) AS $$
+BEGIN
+	RETURN QUERY SELECT entry.excode, student.sname,entry.egrade,
+	CASE
+		WHEN entry.egrade >= 70 THEN 'Distinction'
+		WHEN entry.egrade < 70 and entry.egrade >= 50 THEN 'Pass' 
+		WHEN entry.egrade < 50 THEN 'Fail'
+		else 'Not taken'
+	END AS egrade
+	from entry,student WHERE student.sno = entry.sno ORDER BY examination_code,student_name;
+END;
+$$ LANGUAGE PLPGSQL;
 
 -- -- FOR TASK I
--- CREATE OR REPLACE FUNCTION show_table_entry_with_excode(target_excode CHAR(4))
--- RETURNS TABLE (
--- 				examination_code CHAR(4),
--- 				student_name VARCHAR(200), 
--- 				egrade_value DECIMAL(5,2),
--- 				egrade_text TEXT) AS $$
--- BEGIN
--- 	RETURN QUERY SELECT entry.excode, student.sname,entry.egrade,
--- 	CASE
--- 		WHEN entry.egrade >= 70 THEN 'Distinction'
--- 		WHEN entry.egrade < 70 and entry.egrade >= 50 THEN 'Pass' 
--- 		WHEN entry.egrade < 50 THEN 'Fail'
--- 		else 'Not taken'
--- 	END AS egrade
--- 	from entry,student WHERE student.sno = entry.sno AND entry.excode = target_excode ORDER BY examination_code,student_name;
--- END;
--- $$ LANGUAGE PLPGSQL;
+CREATE OR REPLACE FUNCTION show_table_entry_with_excode(target_excode CHAR(4))
+RETURNS TABLE (
+				examination_code CHAR(4),
+				student_name VARCHAR(200), 
+				egrade_value DECIMAL(5,2),
+				egrade_text TEXT) AS $$
+BEGIN
+	RETURN QUERY SELECT entry.excode, student.sname,entry.egrade,
+	CASE
+		WHEN entry.egrade >= 70 THEN 'Distinction'
+		WHEN entry.egrade < 70 and entry.egrade >= 50 THEN 'Pass' 
+		WHEN entry.egrade < 50 THEN 'Fail'
+		else 'Not taken'
+	END AS egrade
+	from entry,student WHERE student.sno = entry.sno AND entry.excode = target_excode ORDER BY examination_code,student_name;
+END;
+$$ LANGUAGE PLPGSQL;
 
 -- -- testing for task C
 --SELECT student_withdraw(1,'db01');
