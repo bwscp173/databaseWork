@@ -39,6 +39,7 @@ try:
 except psycopg2.OperationalError as e:
     print("connection error, turn on the 'BIG-IP edge client' vpn.")
     print("running GUI but commands won't execute.")
+    conn = None
 
 
 
@@ -52,24 +53,17 @@ class App:
             self.__cursor = self.__DbConnection.cursor()
             self.__cursor.execute('SET search_path to summative,public;')
 
-        #self.CTK.geometry("")  # if i dont set the geometry then it auto fits better then i can
         self.__title = "SQL summative project"
-
         self.CTK.title(self.__title)
-
-        self.__tableNameTitles: dict = {"exam": ["excode", "extitle", "exlocation", "exdate", "extime"],
-                                        "student": ["sno", "sname", "semail"],
-                                        "entry": ["eno", "excode", "sno", "egrade"],
-                                        "cancel": ["eno", "excode", "sno", "cdate", "curser"]
-                                        }
 
         self.mostRecentQuery = ""
 
         self.init_buttons()
-
         self.CTK.mainloop()
 
     def __run_sql_command(self, query: str):
+        """runs any SQL command given onto the db only checks
+        if there is a connection to the db."""
         self.mostRecentQuery = query
         print("running command: " + query)
         if self.__DbConnection is not None:
@@ -84,9 +78,7 @@ class App:
                 print("no results to fetch from that command")
 
     def display_results(self):
-        #print("results: ", self.__cursor.fetchall())
-
-
+        """opens a customTK GUI popup to show the most recent command + the results"""
         results_tab = CTk.CTk()
         results_tab.title(self.__title + ": Veiwing results")
 
@@ -96,7 +88,6 @@ class App:
         text = CTk.CTkTextbox(results_tab, width=500, height=500)
         text.grid(column=0, row=1, padx=20, pady=20)
 
-
         raw:list[tuple] = self.__cursor.fetchall()
         print(raw)
         for i in range(len(raw)):
@@ -104,10 +95,6 @@ class App:
 
             text.insert(index=CTk.END, text=formated)
         results_tab.mainloop()
-
-    def custom_func(self):
-        print("custom function!")
-
 
     #    A B C
     #    0 0 0
@@ -118,39 +105,45 @@ class App:
         task_A_tab = CTk.CTk()
         task_A_tab.title(self.__title + ": Task A - adding student")
 
-
-        label = CTk.CTkLabel(task_A_tab, text="what is the students's name:")
+        label = CTk.CTkLabel(task_A_tab, text="what is the students sno:")
         label.grid(column=0, row=0, padx=20, pady=20)
+
+        snoEntryTextVar = CTk.StringVar(task_A_tab)
+        snoTextEntry = CTk.CTkEntry(task_A_tab,width=120,height=40, textvariable=snoEntryTextVar)
+        snoTextEntry.grid(column=1, row=0, padx=20, pady=20)
+
+        label = CTk.CTkLabel(task_A_tab, text="what is the students name:")
+        label.grid(column=0, row=1, padx=20, pady=20)
 
         nameEntryTextVar = CTk.StringVar(task_A_tab)
         nametextEntry = CTk.CTkEntry(task_A_tab,width=120,height=40, textvariable=nameEntryTextVar)
-        nametextEntry.grid(column=1, row=0, padx=20, pady=20)
+        nametextEntry.grid(column=1, row=1, padx=20, pady=20)
 
 
-        label = CTk.CTkLabel(task_A_tab, text="what is the students's email:")
-        label.grid(column=0, row=1, padx=20, pady=20)
+        label = CTk.CTkLabel(task_A_tab, text="what is the students email:")
+        label.grid(column=0, row=2, padx=20, pady=20)
 
         emailEntryTextVar = CTk.StringVar(task_A_tab)
         emailtextEntry = CTk.CTkEntry(task_A_tab,width=120,height=40, textvariable=emailEntryTextVar)
-        emailtextEntry.grid(column=1, row=1, padx=20, pady=20)
+        emailtextEntry.grid(column=1, row=2, padx=20, pady=20)
 
         updateButton = CTk.CTkButton(task_A_tab, text="Update 'total query'", command=
             lambda: (
-                totalTextVar.set(f"INSERT INTO student(sname,semail) VALUES ('{nametextEntry.get()}','{emailtextEntry.get()}');"),
+                totalTextVar.set(f"INSERT INTO student(sno,sname,semail) VALUES ('snoTextEntry','{nametextEntry.get()}','{emailtextEntry.get()}');"),
             )
         )
-        updateButton.grid(column=0, row=2, padx=20, pady=20)
+        updateButton.grid(column=0, row=3, padx=20, pady=20)
 
         totalTextVar = CTk.StringVar(task_A_tab)
         totallabelA = CTk.CTkLabel(task_A_tab, textvariable=totalTextVar)
-        totallabelA.grid(column=1, row=2, padx=20, pady=20)
+        totallabelA.grid(column=1, row=3, padx=20, pady=20)
 
         updateButton = CTk.CTkButton(task_A_tab, text="submit command", command=
             lambda: (
                 self.__run_sql_command(totalTextVar.get())
             )
         )
-        updateButton.grid(column=0, row=3, columnspan=2, padx=20, pady=20)
+        updateButton.grid(column=0, row=4, columnspan=2, padx=20, pady=20)
 
         totalTextVar.set(f"INSERT INTO student(sname,semail) VALUES ('{nametextEntry.get()}','{emailtextEntry.get()}');"),
         task_A_tab.mainloop()
@@ -268,7 +261,6 @@ in the student table."""
 
         #SELECT student_withdraw(1,'db01')
 
-
     #    0 0 0
     #    D E F
     #    0 0 0
@@ -318,13 +310,14 @@ in a year. The student cannot take more than one examination on the same day.
         task_E_tab = CTk.CTk()
         task_E_tab.title(self.__title + ": Task E - add examination")
 
+        label = CTk.CTkLabel(task_E_tab, text="what is the exams eno:")
+        label.grid(column=0, row=0, padx=20, pady=20)
 
-        # -0-
-        # X X
-        # 0 0
-        # 0 0
-        # 0 0
-        # 0 0
+        enoEntryTextVar = CTk.StringVar(task_E_tab)
+        enoTextEntry = CTk.CTkEntry(task_E_tab,width=120,height=40, textvariable=enoEntryTextVar)
+        enoTextEntry.grid(column=1, row=0, padx=20, pady=20)
+
+
         label = CTk.CTkLabel(task_E_tab, text="what is the exam's excode:")
         label.grid(column=0, row=1, padx=20, pady=20)
 
@@ -332,12 +325,7 @@ in a year. The student cannot take more than one examination on the same day.
         excodetextEntry = CTk.CTkEntry(task_E_tab,width=120,height=40, textvariable=excodeentryTextVar)
         excodetextEntry.grid(column=1, row=1, padx=20, pady=20)
 
-        # -0-
-        # 0 0
-        # X X
-        # 0 0
-        # 0 0
-        # 0 0
+
         label = CTk.CTkLabel(task_E_tab, text="what is the student's sno:")
         label.grid(column=0, row=2, padx=20, pady=20)
 
@@ -347,7 +335,7 @@ in a year. The student cannot take more than one examination on the same day.
 
         updateButton = CTk.CTkButton(task_E_tab, text="Update 'total query'", command=
             lambda: (
-                totalTextVar.set(f"INSERT INTO entry (excode,sno) VALUES ('{excodetextEntry.get()}','{snotextEntry.get()}');")
+                totalTextVar.set(f"INSERT INTO entry (eno,excode,sno) VALUES ('{enoTextEntry.get()}','{excodetextEntry.get()}','{snotextEntry.get()}');")
             )
         )
         updateButton.grid(column=0, row=4, padx=20, pady=20)
@@ -364,7 +352,7 @@ in a year. The student cannot take more than one examination on the same day.
         )
         submitButton.grid(column=0, row=5, columnspan=2, padx=20, pady=20)
 
-        totalTextVar.set(f"INSERT INTO entry (excode,sno) VALUES ('{excodetextEntry.get()}','{snotextEntry.get()}');")
+        totalTextVar.set(f"INSERT INTO entry (eno,excode,sno) VALUES ('','{excodetextEntry.get()}','{snotextEntry.get()}');")
         task_E_tab.mainloop()
 
     def task_F(self):
@@ -476,16 +464,16 @@ examination code."""
         task_I_tab = CTk.CTk()
         task_I_tab.title(self.__title + ": Task I - get classes grades")
 
-        label = CTk.CTkLabel(task_I_tab, text="what is the students sno:")
+        label = CTk.CTkLabel(task_I_tab, text="what is the exams excode:")
         label.grid(column=0, row=0, padx=20, pady=20)
 
-        snoEntryTextVar = CTk.StringVar(task_I_tab)
-        snoTextEntry = CTk.CTkEntry(task_I_tab,width=120,height=40, textvariable=snoEntryTextVar)
-        snoTextEntry.grid(column=1, row=0, padx=20, pady=20)
+        excodeEntryTextVar = CTk.StringVar(task_I_tab)
+        excodeTextEntry = CTk.CTkEntry(task_I_tab,width=120,height=40, textvariable=excodeEntryTextVar)
+        excodeTextEntry.grid(column=1, row=0, padx=20, pady=20)
 
         updateButton = CTk.CTkButton(task_I_tab, text="Update 'total query'", command=
             lambda: (
-                totalTextVar.set(f"SELECT * FROM show_table_entry_with_excode('{snoTextEntry.get()}');")
+                totalTextVar.set(f"SELECT * FROM show_table_entry_with_excode('{excodeTextEntry.get()}');")
             )
         )
         updateButton.grid(column=0, row=1, padx=20, pady=20)
@@ -504,8 +492,6 @@ examination code."""
         # making this be displayed with this text sowhen it appears its not a shock to the user
         totalTextVar.set("SELECT * FROM show_table_entry_with_excode('');")
         task_I_tab.mainloop()
-
-
 
     def init_buttons(self):
         """just creating the 3x3 grid of buttons to call each of the assesments tasks"""
