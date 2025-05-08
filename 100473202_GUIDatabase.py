@@ -3,7 +3,7 @@
 
 File                     :  GUIDatabase.py
 
-date                     :  4/3/2025
+date                     :  2/5/2025
 
 Author                   :  Benedict Ward
 
@@ -16,30 +16,34 @@ History                  :  4/3/2025 v1.0 - added code given in the lecture
 
                             20/4/2025 v2 - will redo alot of the frames here to better fit with the project
 ===================================================================================================="""
+from tkinter.constants import CENTER
 import psycopg2
 import customtkinter as CTk
+import tkinter
+from tkinter import messagebox, ttk
 import json
 
 
-
-with open("../secret.json", "r") as f:
-    secretData = json.load(f)
-
 try:
-    conn = psycopg2.connect(user=secretData["user"],
-                            password=secretData["password"],
-                            host=secretData["host"],
-                            port=secretData["port"],
-                            database=secretData["database"]
-                            )
-    #  the summative db is selected in the __init__
-    print(f"successfully connected to the db named '{secretData["database"]}'!")
-    secretData = {}
+    with open("../secret.json", "r") as f:
+        secretData = json.load(f)
 
-except psycopg2.OperationalError as e:
-    print("connection error, turn on the 'BIG-IP edge client' vpn.")
-    print("running GUI but commands won't execute.")
+    try:
+        conn = psycopg2.connect(user=secretData["user"],
+                                password=secretData["password"],
+                                host=secretData["host"],
+                                port=secretData["port"],
+                                database=secretData["database"]
+                                )
+        #  the summative db is selected in the __init__
+        print(f"successfully connected to the db named '{secretData["database"]}'!")
+    except psycopg2.OperationalError as e:
+        print("connection error, turn on the 'BIG-IP edge client' vpn.")
+        print("running GUI but commands won't execute.")
+        conn = None
+except FileNotFoundError:
     conn = None
+secretData = {}
 
 
 
@@ -47,6 +51,7 @@ class App:
     def __init__(self, database_connection: psycopg2.extensions.connection) -> None:
         """uses the connection to generate a database cursor and initialises the GUI"""
         self.CTK = CTk.CTk()
+        self.CTK.resizable(False, False)
         self.__DbConnection = database_connection
         if self.__DbConnection is not None:
             print("connected!")
@@ -68,32 +73,47 @@ class App:
         print("running command: " + query)
         if self.__DbConnection is not None:
 
-            self.__cursor.execute(query)
+            try:
+                self.__cursor.execute(query)
+            except psycopg2.errors.InvalidTextRepresentation as ex:
+                tkinter.messagebox.showerror("error", f"when trying to execute query '{self.mostRecentQuery}':\n{ex}")
+                return -1
             self.__DbConnection.commit()
             
             print("fetching results:")
             try:
                 self.display_results()
             except psycopg2.ProgrammingError:
-                print("no results to fetch from that command")
+                print("no results to fetch from that command")  # there is no need for a GUI error here
 
     def display_results(self):
         """opens a customTK GUI popup to show the most recent command + the results"""
         results_tab = CTk.CTk()
-        results_tab.title(self.__title + ": Veiwing results")
+        results_tab.title(self.__title + ": Viewing results")
 
         label = CTk.CTkLabel(results_tab, text=f"the most recent command:  {self.mostRecentQuery}")
         label.grid(column=0, row=0, padx=20, pady=20)
 
-        text = CTk.CTkTextbox(results_tab, width=500, height=500)
-        text.grid(column=0, row=1, padx=20, pady=20)
+        if self.__cursor.description is None:
+            return -1
+
+        column_names:tuple = tuple([desc[0] for desc in self.__cursor.description])
+        if column_names[0] in ["student_withdraw","delete_exam","give_egrade"]: # as this function has no output
+            return -1
+        print(column_names)
+        text_tree = tkinter.ttk.Treeview(results_tab, columns=column_names, show='headings')
+        text_tree.grid(column=0, row=1, padx=20, pady=20)
+
+        for column in column_names:
+            text_tree.heading(column,text=column)
+            text_tree.column(column, anchor=CENTER)
 
         raw:list[tuple] = self.__cursor.fetchall()
         print(raw)
         for i in range(len(raw)):
-            formated = str(raw[i]) + '\n'
-
-            text.insert(index=CTk.END, text=formated)
+            formated = raw[i]
+            print("formated: ",formated)
+            text_tree.insert(index=CTk.END,parent='', values=formated)
         results_tab.mainloop()
 
     #    A B C
@@ -129,7 +149,7 @@ class App:
 
         updateButton = CTk.CTkButton(task_A_tab, text="Update 'total query'", command=
             lambda: (
-                totalTextVar.set(f"INSERT INTO student(sno,sname,semail) VALUES ('snoTextEntry','{nametextEntry.get()}','{emailtextEntry.get()}');"),
+                totalTextVar.set(f"INSERT INTO student(sno,sname,semail) VALUES ('{snoTextEntry.get()}','{nametextEntry.get()}','{emailtextEntry.get()}');"),
             )
         )
         updateButton.grid(column=0, row=3, padx=20, pady=20)
@@ -211,7 +231,7 @@ class App:
         )
         submitButton.grid(column=0, row=6, columnspan=2, padx=20, pady=20)
 
-        # making this be displayed with this text sowhen it appears its not a shock to the user
+        # making this be displayed with this text so when it appears it's not a shock to the user
         totalTextVar.set(f"INSERT INTO exam(excode,extitle,exlocation,exdate,extime) VALUES ('{excodeTextEntry.get()}','{extitleTextEntry.get()}','{exlocationTextEntry.get()}','{exdateTextEntry.get()}','{extimeTextEntry.get()}');")
         task_B_tab.mainloop()
 
@@ -230,36 +250,35 @@ in the student table."""
         snoTextEntry = CTk.CTkEntry(task_C_tab,width=120,height=40, textvariable=snoEntryTextVar)
         snoTextEntry.grid(column=1, row=0, padx=20, pady=20)
 
-        label = CTk.CTkLabel(task_C_tab, text="what is the exams excode:")
-        label.grid(column=0, row=1, padx=20, pady=20)
-
-        excodeEntryTextVar = CTk.StringVar(task_C_tab)
-        excodeTextEntry = CTk.CTkEntry(task_C_tab,width=120,height=40, textvariable=excodeEntryTextVar)
-        excodeTextEntry.grid(column=1, row=1, padx=20, pady=20)
+        # label = CTk.CTkLabel(task_C_tab, text="what is the exams excode:")
+        # label.grid(column=0, row=1, padx=20, pady=20)
+        #
+        # excodeEntryTextVar = CTk.StringVar(task_C_tab)
+        # excodeTextEntry = CTk.CTkEntry(task_C_tab,width=120,height=40, textvariable=excodeEntryTextVar)
+        # excodeTextEntry.grid(column=1, row=1, padx=20, pady=20)
 
         updateButton = CTk.CTkButton(task_C_tab, text="Update 'total query'", command=
             lambda: (
-                totalTextVar.set(f"SELECT student_withdraw({snoTextEntry.get()},'{excodeTextEntry.get()}');")
+                totalTextVar.set(f"SELECT student_withdraw({snoTextEntry.get()});")
             )
         )
-        updateButton.grid(column=0, row=2, padx=20, pady=20)
+        updateButton.grid(column=0, row=1, padx=20, pady=20)
 
         totalTextVar = CTk.StringVar(task_C_tab)
         totallabelB = CTk.CTkLabel(task_C_tab, textvariable=totalTextVar)
-        totallabelB.grid(column=1, row=2, padx=20, pady=20)
+        totallabelB.grid(column=1, row=1, padx=20, pady=20)
 
         submitButton = CTk.CTkButton(task_C_tab, text="submit command", command=
             lambda: (
                 self.__run_sql_command(totalTextVar.get())
             )
         )
-        submitButton.grid(column=0, row=3, columnspan=2, padx=20, pady=20)
+        submitButton.grid(column=0, row=2, columnspan=2, padx=20, pady=20)
 
         # making this be displayed with this text sowhen it appears its not a shock to the user
-        totalTextVar.set(f"SELECT student_withdraw(,'');")
+        totalTextVar.set(f"SELECT student_withdraw();")
         task_C_tab.mainloop()
 
-        #SELECT student_withdraw(1,'db01')
 
     #    0 0 0
     #    D E F
@@ -455,7 +474,7 @@ the examination then the result is shown as 'Not taken'. The table should displa
 exam code, exam title, student name and exam result (e.g., 'Distinction', ‘Pass’,
 ‘Fail’, ‘Not taken’).
 
-        i dont think any additional GUI is needed for this function as its for all students"""
+        i don't think any additional GUI is needed for this function as it's for all students"""
         self.__run_sql_command("SELECT * FROM show_table_entry();")
 
     def task_I(self):
@@ -489,7 +508,7 @@ examination code."""
         )
         submitButton.grid(column=0, row=2, columnspan=2, padx=20, pady=20)
 
-        # making this be displayed with this text sowhen it appears its not a shock to the user
+        # making this be displayed with this text so when it appears it's not a shock to the user
         totalTextVar.set("SELECT * FROM show_table_entry_with_excode('');")
         task_I_tab.mainloop()
 
